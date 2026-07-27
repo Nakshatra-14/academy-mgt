@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Result View</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+    margin-bottom:20px;
+}
+
+select{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+.search-box{
+    margin-top:15px;
+}
+
+.search-box input{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+.table-wrapper{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+    padding:12px;
+    text-align:left;
+}
+
+td{
+    padding:12px;
+    border-bottom:1px solid #ddd;
+    text-align:left;
+}
+
+.rank1{
+    color:goldenrod;
+    font-weight:bold;
+}
+
+.rank2{
+    color:gray;
+    font-weight:bold;
+}
+
+.rank3{
+    color:#b87333;
+    font-weight:bold;
+}
+
+.loading{
+    text-align:center;
+    padding:30px;
+}
+
+@media(max-width:768px)
+{
+    table{
+        min-width:700px;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Exam Results</h1>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <label>
+            Select Exam
+        </label>
+
+        <br><br>
+
+        <select id="examSelect"
+                onchange="loadResults()">
+
+            <option value="">
+                Select Exam
+            </option>
+
+        </select>
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                id="searchStudent"
+                placeholder="Search Student Name or ID"
+                onkeyup="filterResults()">
+
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="table-wrapper">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student ID</th>
+                        <th>Name</th>
+                        <th>Marks</th>
+                        <th>Total</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+
+                <tbody id="resultTable">
+
+                    <tr>
+                        <td colspan="6"
+                            class="loading">
+                            Select Exam
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const EXAM_API="/api/exam";
+const MARKS_API="/api/marks";
+const STUDENT_API="/api/student";
+
+let exams=[];
+let allResults=[];
+
+async function init()
+{
+    await loadExams();
+}
+
+async function loadExams()
+{
+    const response=
+        await fetch(EXAM_API);
+
+    exams=
+        await response.json();
+
+    const select=
+        document.getElementById(
+            "examSelect"
+        );
+
+    exams.forEach(exam=>{
+
+        select.innerHTML +=
+        `
+        <option value="${exam.examId}">
+            ${exam.examName}
+        </option>
+        `;
+    });
+}
+
+async function loadResults()
+{
+    const examId=
+        document.getElementById(
+            "examSelect"
+        ).value;
+
+    if(examId==="")
+        return;
+
+    const exam=
+        exams.find(
+            e=>e.examId===examId
+        );
+
+    const marksResponse=
+        await fetch(
+            MARKS_API+
+            "/exam/"+
+            examId
+        );
+
+    const marks=
+        await marksResponse.json();
+
+    let resultRows=[];
+
+    for(const mark of marks)
+    {
+        const studentResponse=
+            await fetch(
+                STUDENT_API+
+                "/"+
+                mark.studentId
+            );
+
+        const student=
+            await studentResponse.json();
+
+        resultRows.push({
+
+            studentId:
+                student.studentId,
+
+            name:
+                student.name,
+
+            marks:
+                mark.markObtained,
+
+            total:
+                exam.totalMarks,
+
+            percentage:
+                (
+                    mark.markObtained
+                    /
+                    exam.totalMarks
+                    *
+                    100
+                ).toFixed(2)
+
+        });
+    }
+
+    resultRows.sort(
+        (a,b)=>
+        b.marks-a.marks
+    );
+
+    allResults=resultRows;
+
+    renderResults(
+        allResults
+    );
+}
+
+function filterResults()
+{
+    const keyword=
+        document.getElementById(
+            "searchStudent"
+        )
+        .value
+        .toLowerCase();
+
+    const filtered=
+        allResults.filter(row=>
+
+            row.name
+            .toLowerCase()
+            .includes(keyword)
+
+            ||
+
+            row.studentId
+            .toLowerCase()
+            .includes(keyword)
+
+        );
+
+    renderResults(filtered);
+}
+
+function renderResults(rows)
+{
+    const table=
+        document.getElementById(
+            "resultTable"
+        );
+
+    if(rows.length===0)
+    {
+        table.innerHTML=
+        `
+        <tr>
+            <td colspan="6">
+                No Results Found
+            </td>
+        </tr>
+        `;
+        return;
+    }
+
+    let html="";
+
+    rows.forEach(
+        (row,index)=>
+    {
+
+        let rankClass="";
+
+        if(index===0)
+            rankClass="rank1";
+
+        else if(index===1)
+            rankClass="rank2";
+
+        else if(index===2)
+            rankClass="rank3";
+
+        html +=
+        `
+        <tr>
+
+            <td class="${rankClass}">
+                ${index+1}
+            </td>
+
+            <td>
+                ${row.studentId}
+            </td>
+
+            <td>
+                ${row.name}
+            </td>
+
+            <td>
+                ${row.marks}
+            </td>
+
+            <td>
+                ${row.total}
+            </td>
+
+            <td>
+                ${row.percentage}%
+            </td>
+
+        </tr>
+        `;
+    });
+
+    table.innerHTML=
+        html;
+}
+
+init();
+
+</script>
+
+</body>
+</html>

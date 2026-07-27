@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Manage Exams</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.search-box{
+    margin-bottom:20px;
+}
+
+.search-box input{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+.exam-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:20px;
+}
+
+.exam-card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+.exam-id{
+    color:#2563eb;
+    font-weight:bold;
+    margin-bottom:8px;
+}
+
+.exam-name{
+    font-size:22px;
+    font-weight:bold;
+    margin-bottom:12px;
+}
+
+.exam-info{
+    margin-bottom:8px;
+    color:#555;
+}
+
+.btn-group{
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+}
+
+.btn{
+    flex:1;
+    border:none;
+    border-radius:8px;
+    padding:10px;
+    color:white;
+    cursor:pointer;
+}
+
+.edit-btn{
+    background:#2563eb;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+.marks-btn{
+    background:#16a34a;
+    width:100%;
+    margin-top:10px;
+}
+
+.loading,
+.no-data{
+    text-align:center;
+    padding:30px;
+    color:#666;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Zenith Computer Academy</h1>
+    <p>Manage Exams</p>
+</div>
+
+<div class="container">
+
+    <div class="search-box">
+        <input
+            type="text"
+            id="search"
+            placeholder="Search Exam..."
+            onkeyup="filterExams()">
+    </div>
+
+    <div id="examContainer" class="exam-grid">
+
+        <div class="loading">
+            Loading Exams...
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const EXAM_API = "/api/exam";
+const COURSE_API = "/api/course";
+
+let allExams = [];
+let allCourses = [];
+
+async function loadCourses()
+{
+    const response =
+        await fetch(COURSE_API);
+
+    allCourses =
+        await response.json();
+}
+
+function getCourseDisplay(courseId)
+{
+    const course =
+        allCourses.find(
+            c => c.id === courseId
+        );
+
+    if(course)
+    {
+        return `${course.courseName} (${courseId})`;
+    }
+
+    return courseId;
+}
+
+async function loadExams()
+{
+    try
+    {
+        const response =
+            await fetch(EXAM_API);
+
+        allExams =
+            await response.json();
+
+        renderExams(allExams);
+    }
+    catch(error)
+    {
+        console.error(error);
+
+        document.getElementById(
+            "examContainer"
+        ).innerHTML =
+        `
+        <div class="no-data">
+            Failed To Load Exams
+        </div>
+        `;
+    }
+}
+
+function renderExams(exams)
+{
+    const container =
+        document.getElementById(
+            "examContainer"
+        );
+
+    if(exams.length===0)
+    {
+        container.innerHTML =
+        `
+        <div class="no-data">
+            No Exams Found
+        </div>
+        `;
+        return;
+    }
+
+    let html="";
+
+    exams.forEach(exam=>{
+
+        const examDate =
+            new Date(exam.examDate)
+            .toLocaleDateString();
+
+        html +=
+        `
+        <div class="exam-card">
+
+            <div class="exam-id">
+                ${exam.examId}
+            </div>
+
+            <div class="exam-name">
+                ${exam.examName}
+            </div>
+
+            <div class="exam-info">
+                Course :
+                ${getCourseDisplay(exam.courseId)}
+            </div>
+
+            <div class="exam-info">
+                Total Marks :
+                ${exam.totalMarks}
+            </div>
+
+            <div class="exam-info">
+                Date :
+                ${examDate}
+            </div>
+
+            <div class="btn-group">
+
+                <button
+                    class="btn edit-btn"
+                    onclick="editExam('${exam.examId}')">
+                    Edit
+                </button>
+
+                <button
+                    class="btn delete-btn"
+                    onclick="deleteExam('${exam.examId}')">
+                    Delete
+                </button>
+
+            </div>
+
+            <button
+                class="btn marks-btn"
+                onclick="openMarks('${exam.examId}')">
+
+                Enter Marks
+
+            </button>
+
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function filterExams()
+{
+    const keyword =
+        document.getElementById(
+            "search"
+        ).value.toLowerCase();
+
+    const filtered =
+        allExams.filter(exam=>
+
+            exam.examName
+            .toLowerCase()
+            .includes(keyword)
+
+            ||
+
+            exam.examId
+            .toLowerCase()
+            .includes(keyword)
+
+        );
+
+    renderExams(filtered);
+}
+
+function editExam(id)
+{
+    window.location =
+        "exam-edit.html?id=" + id;
+}
+
+async function deleteExam(id)
+{
+    const confirmDelete =
+        confirm(
+            "Delete this exam?"
+        );
+
+    if(!confirmDelete)
+    {
+        return;
+    }
+
+    try
+    {
+        const response =
+            await fetch(
+                EXAM_API + "/" + id,
+                {
+                    method:"DELETE"
+                }
+            );
+
+        if(response.ok)
+        {
+            loadExams();
+        }
+        else
+        {
+            alert(
+                "Failed To Delete Exam"
+            );
+        }
+    }
+    catch(error)
+    {
+        console.error(error);
+    }
+}
+
+function openMarks(id)
+{
+    window.location =
+        "marks-entry.html?examId=" + id;
+}
+
+async function init()
+{
+    await loadCourses();
+    await loadExams();
+}
+
+init();
+
+</script>
+
+</body>
+</html>

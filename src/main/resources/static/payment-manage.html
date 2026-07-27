@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Payment Management</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    padding:20px;
+    text-align:center;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.payment-status{
+    display:inline-block;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:bold;
+    margin-top:8px;
+}
+
+.payment-paid{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.payment-due{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.payment-completed{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.payment-inactive{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.search-box{
+    margin-bottom:20px;
+}
+
+.search-box input{
+    width:100%;
+    padding:12px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    font-size:16px;
+}
+
+.student-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:20px;
+}
+
+.student-card{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+}
+
+.student-id{
+    color:#2563eb;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.student-name{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:10px;
+}
+
+.student-info{
+    margin-bottom:8px;
+    color:#555;
+}
+
+.status{
+    display:inline-block;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:14px;
+    font-weight:bold;
+    margin-top:8px;
+}
+
+.active{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.inactive{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.completed{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.btn{
+    margin-top:15px;
+    width:100%;
+    border:none;
+    border-radius:8px;
+    padding:12px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+    font-size:15px;
+}
+
+.btn:hover{
+    background:#1d4ed8;
+}
+
+.no-data{
+    text-align:center;
+    color:#666;
+    padding:30px;
+}
+
+.loading{
+    text-align:center;
+    padding:30px;
+    color:#666;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Zenith Computer Academy</h1>
+    <p>Payment Management</p>
+</div>
+
+<div class="container">
+
+    <div class="search-box">
+        <input
+            type="text"
+            id="search"
+            placeholder="Search Student..."
+            onkeyup="filterStudents()">
+    </div>
+
+    <div id="studentContainer" class="student-grid">
+
+        <div class="loading">
+            Loading Students...
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const STUDENT_API = "/api/student";
+const COURSE_API = "/api/course";
+const PAYMENT_API = "/api/payment";
+
+let allStudents = [];
+let allCourses = [];
+let allPayments = [];
+
+async function loadCourses()
+{
+    try
+    {
+        const response =
+            await fetch(COURSE_API);
+
+        allCourses =
+            await response.json();
+    }
+    catch(error)
+    {
+        console.error(error);
+    }
+}
+
+async function loadPayments()
+{
+    try
+    {
+        const response =
+            await fetch(PAYMENT_API);
+
+        allPayments =
+            await response.json();
+    }
+    catch(error)
+    {
+        console.error(error);
+    }
+}
+
+async function loadStudents()
+{
+    try
+    {
+        const response =
+            await fetch(STUDENT_API);
+
+        allStudents =
+            await response.json();
+
+        renderStudents(allStudents);
+    }
+    catch(error)
+    {
+        console.error(error);
+
+        document.getElementById(
+            "studentContainer"
+        ).innerHTML =
+        `
+        <div class="no-data">
+            Failed to load students
+        </div>
+        `;
+    }
+}
+
+function getCourseDisplay(courseId)
+{
+    const course =
+        allCourses.find(
+            c => c.id === courseId
+        );
+
+    if(course)
+    {
+        return `${course.courseName} (${courseId})`;
+    }
+
+    return courseId;
+}
+
+function getCurrentMonthLabel()
+{
+    const today =
+        new Date();
+
+    return today.toLocaleString(
+        "default",
+        {
+            month:"long",
+            year:"numeric"
+        }
+    ).toUpperCase();
+}
+
+function getPaymentStatus(student)
+{
+    if(student.status === "COMPLETED")
+    {
+        return {
+            text : "COURSE COMPLETED",
+            css  : "payment-completed"
+        };
+    }
+
+    if(student.status === "INACTIVE")
+    {
+        return {
+            text : "INACTIVE",
+            css  : "payment-inactive"
+        };
+    }
+
+    const currentDate =
+        new Date();
+
+    const currentMonth =
+        currentDate.getMonth();
+
+    const currentYear =
+        currentDate.getFullYear();
+
+    const paid =
+        allPayments.some(payment => {
+
+            if(payment.studentId !== student.studentId)
+                return false;
+
+            const paymentDate =
+                new Date(payment.paymentDate);
+
+            return (
+                paymentDate.getMonth() === currentMonth
+                &&
+                paymentDate.getFullYear() === currentYear
+            );
+        });
+
+    const monthLabel =
+        getCurrentMonthLabel();
+
+    if(paid)
+    {
+        return {
+            text : `PAID FOR ${monthLabel}`,
+            css  : "payment-paid"
+        };
+    }
+
+    return {
+        text : `DUE FOR ${monthLabel}`,
+        css  : "payment-due"
+    };
+}
+
+function renderStudents(students)
+{
+    const container =
+        document.getElementById(
+            "studentContainer"
+        );
+
+    if(students.length === 0)
+    {
+        container.innerHTML =
+        `
+        <div class="no-data">
+            No Students Found
+        </div>
+        `;
+        return;
+    }
+
+    let html = "";
+
+    students.forEach(student => {
+
+        let statusClass = "";
+
+        if(student.status === "ACTIVE")
+            statusClass = "active";
+
+        else if(student.status === "INACTIVE")
+            statusClass = "inactive";
+
+        else if(student.status === "COMPLETED")
+            statusClass = "completed";
+
+        const paymentStatus =
+            getPaymentStatus(student);
+
+        html +=
+        `
+        <div class="student-card">
+
+            <div class="student-id">
+                ${student.studentId}
+            </div>
+
+            <div class="student-name">
+                ${student.name}
+            </div>
+
+            <div class="student-info">
+                Course :
+                ${getCourseDisplay(student.courseId)}
+            </div>
+
+            <div class="student-info">
+                Phone :
+                ${student.whatsappNumber || "-"}
+            </div>
+
+            <div class="student-info">
+                Monthly Fee :
+                ₹${student.fees}
+            </div>
+
+            <div class="status ${statusClass}">
+                ${student.status}
+            </div>
+
+            <div class="payment-status ${paymentStatus.css}">
+                ${paymentStatus.text}
+            </div>
+
+            <button
+                class="btn"
+                onclick="openPayment('${student.studentId}')">
+
+                View Payment
+
+            </button>
+
+        </div>
+        `;
+    });
+
+    container.innerHTML =
+        html;
+}
+
+function filterStudents()
+{
+    const keyword =
+        document.getElementById("search")
+        .value
+        .toLowerCase();
+
+    const filtered =
+        allStudents.filter(student =>
+
+            student.name
+            .toLowerCase()
+            .includes(keyword)
+
+            ||
+
+            student.studentId
+            .toLowerCase()
+            .includes(keyword)
+        );
+
+    renderStudents(filtered);
+}
+
+function openPayment(studentId)
+{
+    window.location =
+        "payment-view.html?id=" +
+        studentId;
+}
+
+async function init()
+{
+    await loadCourses();
+    await loadPayments();
+    await loadStudents();
+}
+
+init();
+
+</script>
+
+</body>
+</html>

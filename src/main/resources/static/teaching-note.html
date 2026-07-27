@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Teaching Notes</title>
+
+<style>
+
+body{
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    margin:0;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+    margin-bottom:20px;
+}
+
+input,textarea{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    margin-top:10px;
+}
+
+textarea{
+    min-height:120px;
+}
+
+button{
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.save-btn{
+    background:#2563eb;
+    color:white;
+    padding:12px;
+    width:100%;
+    margin-top:10px;
+}
+
+.search{
+    margin-bottom:15px;
+}
+
+.note-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px;
+    border-bottom:1px solid #eee;
+}
+
+.note-title{
+    cursor:pointer;
+    color:#2563eb;
+    font-weight:bold;
+}
+
+.delete-btn{
+    background:#dc2626;
+    color:white;
+    padding:8px 12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Teaching Notes</h1>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <input
+            id="title"
+            placeholder="Title">
+
+        <textarea
+            id="note"
+            placeholder="Write Note">
+        </textarea>
+
+        <button
+            class="save-btn"
+            onclick="saveNote()">
+
+            Save Note
+
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <input
+            class="search"
+            id="search"
+            placeholder="Search Title"
+            onkeyup="filterNotes()">
+
+        <div id="noteList"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+const API="/api/teaching-note";
+
+let notes=[];
+
+async function loadNotes()
+{
+    const response=
+        await fetch(API);
+
+    notes=
+        await response.json();
+
+    renderNotes(notes);
+}
+
+function renderNotes(data)
+{
+    let html="";
+
+    data.forEach(note=>{
+
+        html+=`
+        <div class="note-row">
+
+            <div
+                class="note-title"
+                onclick="openNote(${note.id})">
+
+                ${note.title}
+
+            </div>
+
+            <button
+                class="delete-btn"
+                onclick="deleteNote(${note.id})">
+
+                Delete
+
+            </button>
+
+        </div>
+        `;
+    });
+
+    document.getElementById(
+        "noteList"
+    ).innerHTML=html;
+}
+
+function filterNotes()
+{
+    const keyword=
+        document.getElementById(
+            "search"
+        )
+        .value
+        .toLowerCase();
+
+    const filtered=
+        notes.filter(note=>
+
+            note.title
+            .toLowerCase()
+            .includes(keyword)
+
+        );
+
+    renderNotes(filtered);
+}
+
+async function saveNote()
+{
+    const title=
+        document.getElementById(
+            "title"
+        ).value.trim();
+
+    const note=
+        document.getElementById(
+            "note"
+        ).value.trim();
+
+    if(title==="")
+    {
+        alert("Title required");
+        return;
+    }
+
+    await fetch(API,{
+        method:"POST",
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
+        body:JSON.stringify({
+            title:title,
+            note:note
+        })
+    });
+
+    document.getElementById(
+        "title"
+    ).value="";
+
+    document.getElementById(
+        "note"
+    ).value="";
+
+    loadNotes();
+}
+
+function openNote(id)
+{
+    window.location=
+        "teaching-note-view.html?id="
+        +id;
+}
+
+async function deleteNote(id)
+{
+    if(!confirm(
+        "Delete note?"
+    ))
+    {
+        return;
+    }
+
+    await fetch(
+        API+"/"+id,
+        {
+            method:"DELETE"
+        }
+    );
+
+    loadNotes();
+}
+
+loadNotes();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Class Schedule</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    padding:20px;
+    text-align:center;
+}
+
+.container{
+    max-width:1100px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+    margin-bottom:20px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:
+        repeat(4,1fr);
+    gap:15px;
+}
+
+input,
+select{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+button{
+    border:none;
+    padding:10px 15px;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+}
+
+.save-btn{
+    background:#2563eb;
+}
+
+.delete-btn{
+    background:#dc2626;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    background:#2563eb;
+    color:white;
+    padding:12px;
+}
+
+td{
+    padding:12px;
+    border-bottom:1px solid #ddd;
+}
+
+@media(max-width:768px){
+
+    .grid{
+        grid-template-columns:1fr;
+    }
+
+    table{
+        min-width:700px;
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Class Schedule</h1>
+</div>
+
+<div class="container">
+<div class="card">
+
+    <div class="grid">
+
+        <select id="dayName">
+
+            <option value="MONDAY">MONDAY</option>
+            <option value="TUESDAY">TUESDAY</option>
+            <option value="WEDNESDAY">WEDNESDAY</option>
+            <option value="THURSDAY">THURSDAY</option>
+            <option value="FRIDAY">FRIDAY</option>
+            <option value="SATURDAY">SATURDAY</option>
+            <option value="SUNDAY">SUNDAY</option>
+
+        </select>
+
+        <input
+            type="time"
+            id="startTime">
+
+        <input
+            type="time"
+            id="endTime">
+
+        <input
+            type="text"
+            id="courseName"
+            placeholder="Course Name">
+
+    </div>
+
+    <button
+        class="save-btn"
+        onclick="saveSchedule()"
+        style="margin-top:15px">
+
+        Save Schedule
+
+    </button>
+
+</div>
+
+<div class="card">
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Course</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody id="scheduleTable">
+
+            <tr>
+                <td colspan="5">
+                    Loading...
+                </td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</div>
+
+<script>
+
+const API =
+    "/api/schedule";
+
+async function loadSchedules()
+{
+    const response =
+        await fetch(API);
+
+    const schedules =
+        await response.json();
+
+    let html = "";
+
+    schedules.forEach(schedule=>{
+
+        html += `
+        <tr>
+
+            <td>
+                ${schedule.dayName}
+            </td>
+
+            <td>
+                ${schedule.startTime}
+            </td>
+
+            <td>
+                ${schedule.endTime}
+            </td>
+
+            <td>
+                ${schedule.courseName}
+            </td>
+
+            <td>
+
+                <button
+                    class="delete-btn"
+                    onclick="deleteSchedule(${schedule.id})">
+
+                    Delete
+
+                </button>
+
+            </td>
+
+        </tr>
+        `;
+    });
+
+    document
+        .getElementById(
+            "scheduleTable"
+        )
+        .innerHTML = html;
+}
+
+async function saveSchedule()
+{
+    const schedule = {
+
+        dayName:
+            document.getElementById(
+                "dayName"
+            ).value,
+
+        startTime:
+            document.getElementById(
+                "startTime"
+            ).value + ":00",
+
+        endTime:
+            document.getElementById(
+                "endTime"
+            ).value + ":00",
+
+        courseName:
+            document.getElementById(
+                "courseName"
+            ).value
+
+    };
+
+    await fetch(
+        API,
+        {
+            method:"POST",
+
+            headers:{
+                "Content-Type":
+                "application/json"
+            },
+
+            body:
+                JSON.stringify(
+                    schedule
+                )
+        }
+    );
+
+    document
+        .getElementById(
+            "courseName"
+        ).value = "";
+
+    loadSchedules();
+}
+
+async function deleteSchedule(id)
+{
+    if(
+        !confirm(
+            "Delete schedule?"
+        )
+    )
+        return;
+
+    await fetch(
+        API + "/" + id,
+        {
+            method:"DELETE"
+        }
+    );
+
+    loadSchedules();
+}
+
+loadSchedules();
+
+</script>
+
+</body>
+</html>

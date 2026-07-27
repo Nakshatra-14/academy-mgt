@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Student</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f9;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        textarea {
+            min-height: 80px;
+        }
+
+        .full {
+            grid-column: 1/-1;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .save-btn {
+            background: #2563eb;
+        }
+
+        .back-btn {
+            background: #6b7280;
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @media(max-width:768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Zenith Computer Academy</h1>
+        <p>Edit Student</p>
+    </div>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2 id="studentTitle">
+                Loading...
+            </h2>
+
+            <br>
+
+            <div class="grid">
+
+                <div>
+                    <label>Name</label>
+                    <input type="text" id="name">
+                </div>
+
+                <div>
+                    <label>DOB</label>
+                    <input type="date" id="dob">
+                </div>
+                <div>
+                    <label>Admission Date</label>
+                    <input type="date" id="admissionDate">
+                </div>
+                <div>
+                    <label>Gender</label>
+                    <select id="gender">
+                        <option value="">Select</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="O">Other</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label>WhatsApp Number</label>
+                    <input type="text" id="whatsappNumber">
+                </div>
+
+                <div>
+                    <label>Father Name</label>
+                    <input type="text" id="fatherName">
+                </div>
+
+                <div>
+                    <label>Mother Name</label>
+                    <input type="text" id="motherName">
+                </div>
+
+                <div>
+                    <label>Guardian Name</label>
+                    <input type="text" id="gurdianName">
+                </div>
+
+                <div>
+                    <label>Guardian Relation</label>
+                    <input type="text" id="gurdianRelation">
+                </div>
+
+                <div>
+                    <label>School</label>
+                    <input type="text" id="school">
+                </div>
+
+                <div>
+                    <label>Class</label>
+                    <input type="text" id="studentClass">
+                </div>
+
+                <div>
+                    <label>Course</label>
+                    <select id="courseId"></select>
+                </div>
+
+                <div>
+                    <label>Fees</label>
+                    <input type="number" id="fees">
+                </div>
+
+                <div>
+                    <label>Status</label>
+                    <select id="status">
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="INACTIVE">INACTIVE</option>
+                        <option value="COMPLETED">COMPLETED</option>
+                    </select>
+                </div>
+
+                <div class="full">
+                    <label>Address</label>
+                    <textarea id="address"></textarea>
+                </div>
+
+                <div class="full">
+
+                    <label>Note</label>
+
+                    <textarea id="note"></textarea>
+
+                </div>
+
+            </div>
+
+            <button class="btn save-btn" onclick="updateStudent()">
+                Update Student
+            </button>
+
+            <button class="btn back-btn" onclick="window.location='student-manage.html'">
+                Back
+            </button>
+
+            <div id="message" class="message"></div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        const STUDENT_API = "/api/student";
+        const COURSE_API = "/api/course";
+
+        const params =
+            new URLSearchParams(window.location.search);
+
+        const studentId =
+            params.get("id");
+
+        let currentStudent = null;
+
+        async function loadCourses() {
+            const response =
+                await fetch(COURSE_API);
+
+            const courses =
+                await response.json();
+
+            let html = "";
+
+            courses.forEach(course => {
+
+                html += `
+            <option value="${course.id}">
+                ${course.courseName}
+            </option>
+        `;
+
+            });
+
+            document.getElementById(
+                "courseId"
+            ).innerHTML = html;
+        }
+
+        async function loadStudent() {
+            const response =
+                await fetch(
+                    STUDENT_API + "/" + studentId
+                );
+
+            currentStudent =
+                await response.json();
+
+            document.getElementById(
+                "studentTitle"
+            ).innerText =
+                currentStudent.studentId;
+
+            document.getElementById("name")
+                .value =
+                currentStudent.name || "";
+
+            document.getElementById("dob")
+                .value =
+                formatDateForInput(
+                    currentStudent.dob
+                );
+
+            document.getElementById("admissionDate")
+                .value =
+                formatDateForInput(
+                    currentStudent.admissionDate
+                );
+
+            document.getElementById("gender")
+                .value =
+                currentStudent.gender || "";
+
+            document.getElementById("fatherName")
+                .value =
+                currentStudent.fatherName || "";
+
+            document.getElementById("motherName")
+                .value =
+                currentStudent.motherName || "";
+
+            document.getElementById("gurdianName")
+                .value =
+                currentStudent.gurdianName || "";
+
+            document.getElementById("gurdianRelation")
+                .value =
+                currentStudent.gurdianRelation || "";
+
+            document.getElementById("whatsappNumber")
+                .value =
+                currentStudent.whatsappNumber || "";
+
+            document.getElementById("address")
+                .value =
+                currentStudent.address || "";
+
+            document.getElementById("school")
+                .value =
+                currentStudent.school || "";
+
+            document.getElementById("studentClass")
+                .value =
+                currentStudent.studentClass || "";
+
+            document.getElementById("fees")
+                .value =
+                currentStudent.fees || 0;
+
+            document.getElementById("status")
+                .value =
+                currentStudent.status || "";
+
+            document.getElementById("note")
+                .value =
+                currentStudent.note || "";
+
+            document.getElementById("courseId")
+                .value =
+                currentStudent.courseId || "";
+        }
+
+        async function updateStudent() {
+            const student = {
+
+                studentId: studentId,
+
+                name:
+                    document.getElementById("name").value,
+
+                dob:
+                    document.getElementById("dob").value,
+
+                admissionDate:
+                    document.getElementById(
+                        "admissionDate"
+                    ).value,
+
+                gender:
+                    document.getElementById("gender").value,
+
+                fatherName:
+                    document.getElementById("fatherName").value,
+
+                motherName:
+                    document.getElementById("motherName").value,
+
+                gurdianName:
+                    document.getElementById("gurdianName").value,
+
+                gurdianRelation:
+                    document.getElementById("gurdianRelation").value,
+
+                whatsappNumber:
+                    document.getElementById("whatsappNumber").value,
+
+                address:
+                    document.getElementById("address").value,
+
+                school:
+                    document.getElementById("school").value,
+
+                studentClass:
+                    document.getElementById("studentClass").value,
+
+                fees:
+                    parseFloat(
+                        document.getElementById("fees").value
+                    ),
+
+                status:
+                    document.getElementById("status").value,
+
+                note:
+                    document.getElementById("note").value,
+
+                courseId:
+                    document.getElementById("courseId").value
+            };
+
+            const response =
+                await fetch(
+                    STUDENT_API + "/" + studentId,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(student)
+                    }
+                );
+
+            if (response.ok) {
+                showMessage(
+                    "Student Updated Successfully",
+                    true
+                );
+
+                setTimeout(() => {
+
+                    window.location =
+                        "student-manage.html";
+
+                }, 1000);
+            }
+            else {
+                showMessage(
+                    "Update Failed",
+                    false
+                );
+            }
+        }
+
+        function formatDateForInput(date) {
+            if (!date)
+                return "";
+
+            return date.substring(0, 10);
+        }
+
+        function showMessage(msg, success) {
+            const div =
+                document.getElementById("message");
+
+            div.style.display = "block";
+
+            div.className =
+                success
+                    ? "message success"
+                    : "message error";
+
+            div.innerText = msg;
+        }
+
+        async function init() {
+            await loadCourses();
+            await loadStudent();
+        }
+
+        init();
+
+    </script>
+
+</body>
+
+</html>

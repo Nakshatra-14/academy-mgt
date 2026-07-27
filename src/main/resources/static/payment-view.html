@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Student Payment</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+    margin-bottom:20px;
+}
+
+.student-name{
+    font-size:24px;
+    font-weight:bold;
+}
+
+.student-id{
+    color:#2563eb;
+    margin-top:5px;
+}
+
+.info{
+    margin-top:10px;
+}
+
+.month-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:15px;
+}
+
+.month-box{
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+    color:white;
+    font-weight:bold;
+}
+
+.paid{
+    background:#16a34a;
+}
+
+.pending{
+    background:#dc2626;
+}
+
+.success{
+    background:#dcfce7;
+    color:#166534;
+    padding:15px;
+    border-radius:10px;
+    margin-top:15px;
+}
+
+.status-box{
+    padding:15px;
+    border-radius:10px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.completed{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+
+.inactive{
+    background:#fee2e2;
+    color:#991b1b;
+}
+
+.form-group{
+    margin-top:15px;
+}
+
+label{
+    display:block;
+    margin-bottom:5px;
+}
+
+input,
+select{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+
+button{
+    width:100%;
+    margin-top:15px;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+.message{
+    margin-top:15px;
+    text-align:center;
+    font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>Payment Details</h1>
+</div>
+
+<div class="container">
+
+    <div id="studentCard"></div>
+
+    <div id="paymentSection"></div>
+
+</div>
+
+<script>
+
+const STUDENT_API="/api/student";
+const PAYMENT_API="/api/payment";
+const COURSE_API="/api/course";
+
+const params=new URLSearchParams(window.location.search);
+
+const studentId=params.get("id");
+
+let student=null;
+let payments=[];
+let allCourses=[];
+
+async function init()
+{
+    await loadCourses();
+    await loadStudent();
+    await loadPayments();
+}
+
+async function loadStudent()
+{
+    const response=
+        await fetch(STUDENT_API+"/"+studentId);
+
+    student=
+        await response.json();
+
+    renderStudent();
+}
+
+function renderStudent()
+{
+    document.getElementById("studentCard").innerHTML=
+    `
+    <div class="card">
+
+        <div class="student-name">
+            ${student.name}
+        </div>
+
+        <div class="student-id">
+            ${student.studentId}
+        </div>
+
+        <div class="info">
+            Course : ${getCourseDisplay(student.courseId)}
+        </div>
+
+        <div class="info">
+            Monthly Fee : ₹${student.fees}
+        </div>
+
+        <div class="info">
+            Status : ${student.status}
+        </div>
+
+    </div>
+    `;
+}
+
+async function loadPayments()
+{
+    const response=
+        await fetch(
+            PAYMENT_API+
+            "/student/"+
+            studentId
+        );
+
+    payments=
+        await response.json();
+
+    renderPaymentSection();
+}
+
+function renderPaymentSection()
+{
+    if(student.status==="COMPLETED")
+    {
+        document.getElementById("paymentSection").innerHTML=
+        `
+        <div class="card">
+            <div class="status-box completed">
+                Student Status : COMPLETED
+            </div>
+        </div>
+        `;
+        return;
+    }
+
+    if(student.status==="INACTIVE")
+    {
+        document.getElementById("paymentSection").innerHTML=
+        `
+        <div class="card">
+            <div class="status-box inactive">
+                Student Status : INACTIVE
+            </div>
+        </div>
+        `;
+        return;
+    }
+
+    let monthHtml="";
+
+    const currentDate=new Date();
+
+    let currentMonthPaid=false;
+
+    for(let i=0;i<4;i++)
+    {
+        const date=
+            new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth()-i,
+                1
+            );
+
+        const month=
+            date.getMonth();
+
+        const year=
+            date.getFullYear();
+
+        const monthName=
+            date.toLocaleString(
+                "default",
+                {month:"short"}
+            );
+
+        const paid=
+            payments.some(payment=>{
+
+                const pd=
+                    new Date(
+                        payment.paymentDate
+                    );
+
+                return (
+                    pd.getMonth()===month
+                    &&
+                    pd.getFullYear()===year
+                );
+            });
+
+        if(i===0 && paid)
+        {
+            currentMonthPaid=true;
+        }
+
+        monthHtml+=
+        `
+        <div class="month-box ${paid ? 'paid':'pending'}">
+            ${monthName} ${year}
+            <br>
+            ${paid ? 'PAID':'PENDING'}
+        </div>
+        `;
+    }
+
+    let paymentForm="";
+
+    if(currentMonthPaid)
+    {
+        paymentForm=
+        `
+        <div class="success">
+            Payment already received for this month
+        </div>
+        `;
+    }
+    else
+    {
+        paymentForm=
+        `
+        <div class="form-group">
+            <label>Amount</label>
+            <input
+                id="amount"
+                type="number"
+                value="${student.fees}">
+        </div>
+
+        <div class="form-group">
+            <label>Mode</label>
+
+            <select id="remarks">
+                <option value="CASH">
+                    CASH
+                </option>
+
+                <option value="UPI">
+                    UPI
+                </option>
+            </select>
+        </div>
+
+        <button onclick="savePayment()">
+            Mark Payment Received
+        </button>
+
+        <div id="message"
+             class="message">
+        </div>
+        `;
+    }
+
+    document.getElementById(
+        "paymentSection"
+    ).innerHTML=
+    `
+    <div class="card">
+
+        <h3>
+            Last 4 Months
+        </h3>
+
+        <div class="month-grid">
+            ${monthHtml}
+        </div>
+
+        ${paymentForm}
+
+    </div>
+    `;
+}
+
+async function loadCourses()
+{
+    const response =
+        await fetch(COURSE_API);
+
+    allCourses =
+        await response.json();
+}
+
+function getCourseDisplay(courseId)
+{
+    const course =
+        allCourses.find(
+            c => c.id === courseId
+        );
+
+    if(course)
+    {
+        return `${course.courseName} (${courseId})`;
+    }
+
+    return courseId;
+}
+
+async function savePayment()
+{
+    const payment=
+    {
+        studentId:
+            student.studentId,
+
+        amount:
+            parseFloat(
+                document.getElementById(
+                    "amount"
+                ).value
+            ),
+
+        remarks:
+            document.getElementById(
+                "remarks"
+            ).value
+    };
+
+    const response=
+        await fetch(
+            PAYMENT_API,
+            {
+                method:"POST",
+
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                    JSON.stringify(
+                        payment
+                    )
+            }
+        );
+
+    if(response.ok)
+    {
+        document.getElementById(
+            "message"
+        ).innerHTML=
+        "Payment Saved Successfully";
+
+        await loadPayments();
+    }
+    else
+    {
+        document.getElementById(
+            "message"
+        ).innerHTML=
+        "Failed To Save Payment";
+    }
+}
+
+init();
+
+</script>
+
+</body>
+</html>

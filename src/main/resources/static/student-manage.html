@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student Management</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background: #f4f6f9;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            margin-bottom: 6px;
+        }
+
+        .btn {
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .view-btn {
+            background: #2563eb;
+            width: 100%;
+        }
+
+        .edit-btn {
+            background: #f59e0b;
+        }
+
+        .delete-btn {
+            background: #dc2626;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .5);
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 85vh;
+            overflow: auto;
+        }
+
+        .details p {
+            margin-bottom: 10px;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .close-btn {
+            background: #6b7280;
+        }
+
+        .details-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media(max-width:768px) {
+            .details-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Zenith Computer Academy</h1>
+        <p>Student Management</p>
+    </div>
+
+    <div class="container">
+
+        <div class="search-box">
+            <input type="text" id="search" placeholder="Search by Student ID or Name..." onkeyup="filterStudents()">
+        </div>
+
+        <div class="cards" id="studentCards">
+        </div>
+
+    </div>
+
+    <div class="modal" id="studentModal">
+
+        <div class="modal-content">
+
+            <h2>Student Details</h2>
+
+            <div id="studentDetails" class="details"></div>
+
+            <div class="actions">
+
+                <button class="btn edit-btn" onclick="editStudent()">
+                    Edit
+                </button>
+
+                <button class="btn delete-btn" onclick="deleteStudent()">
+                    Delete
+                </button>
+
+                <button class="btn close-btn" onclick="closeModal()">
+                    Close
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        const STUDENT_API = "/api/student";
+        const COURSE_API = "/api/course";
+
+        let students = [];
+        let courses = {};
+        let selectedStudent = null;
+
+        async function loadCourses() {
+            const response = await fetch(COURSE_API);
+
+            const data = await response.json();
+
+            data.forEach(course => {
+
+                courses[course.id] =
+                    course.courseName;
+
+            });
+        }
+
+        async function loadStudents() {
+            const response =
+                await fetch(STUDENT_API);
+
+            students =
+                await response.json();
+
+            renderStudents(students);
+        }
+
+        function renderStudents(data) {
+            const container =
+                document.getElementById(
+                    "studentCards"
+                );
+
+            let html = "";
+
+            data.forEach(student => {
+
+                html += `
+            <div class="card">
+
+                <h3>${student.studentId}</h3>
+
+                <p><strong>${student.name}</strong></p>
+
+                <p>
+                📱 ${student.whatsappNumber || "-"}
+                </p>
+
+                <p>
+                📚 ${courses[student.courseId] || student.courseId}
+                </p>
+
+                ${student.note
+                        ? `<p>📝 Click View Details</p>`
+                        : `<p>📝 -</p>`
+                    }
+
+                <p>
+                🟢 ${student.status}
+                </p>
+
+                <button
+                    class="btn view-btn"
+                    onclick="showDetails('${student.studentId}')">
+
+                    View Details
+
+                </button>
+
+            </div>
+        `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function filterStudents() {
+            const keyword =
+                document
+                    .getElementById("search")
+                    .value
+                    .toLowerCase();
+
+            const filtered =
+                students.filter(student =>
+
+                    student.studentId
+                        .toLowerCase()
+                        .includes(keyword)
+
+                    ||
+
+                    student.name
+                        .toLowerCase()
+                        .includes(keyword)
+                );
+
+            renderStudents(filtered);
+        }
+
+        function showDetails(studentId) {
+            selectedStudent =
+                students.find(
+                    s => s.studentId === studentId
+                );
+
+            const courseName =
+                courses[selectedStudent.courseId]
+                || selectedStudent.courseId;
+
+            document
+                .getElementById("studentDetails")
+                .innerHTML = `
+
+            <div class="details-layout">
+
+    <div class="student-info">
+
+            <p><b>ID:</b> ${selectedStudent.studentId}</p>
+            <p><b>Name:</b> ${selectedStudent.name}</p>
+            <p><b>DOB:</b> ${formatDate(selectedStudent.dob)}</p>
+            <p><b>Gender:</b> ${selectedStudent.gender || "-"}</p>
+            <p><b>Father:</b> ${selectedStudent.fatherName || "-"}</p>
+            <p><b>Mother:</b> ${selectedStudent.motherName || "-"}</p>
+            <p><b>Guardian:</b> ${selectedStudent.gurdianName || "-"}</p>
+            <p><b>Relation:</b> ${selectedStudent.gurdianRelation || "-"}</p>
+            <p><b>Phone:</b> ${selectedStudent.whatsappNumber || "-"}</p>
+            <p><b>School:</b> ${selectedStudent.school || "-"}</p>
+            <p><b>Class:</b> ${selectedStudent.studentClass || "-"}</p>
+            <p><b>Course:</b> ${courseName}</p>
+            <p><b>Fees:</b> ₹${selectedStudent.fees}</p>
+            <p><b>Status:</b> ${selectedStudent.status}</p>
+            <p><b>Address:</b> ${selectedStudent.address || "-"}</p>
+            <p><b>Admission Date:</b> ${formatDate(selectedStudent.admissionDate)}</p>
+
+        </div>
+
+        <div class="student-notes">
+
+            <div style="
+                background:#fff;
+                border:1px solid #ddd;
+                border-radius:10px;
+                overflow:hidden;
+                font-family:Arial,sans-serif;
+                box-shadow:0 2px 8px rgba(0,0,0,.08);
+            ">
+                <div style="
+                    background:#2563eb;
+                    color:#fff;
+                    padding:12px 18px;
+                    font-size:18px;
+                    font-weight:600;
+                ">
+                    📝 Student Notes
+                </div>
+
+                <div style="padding:18px;">
+                    <div style="
+                        background:#f8fafc;
+                        border:1px solid #e2e8f0;
+                        border-radius:8px;
+                        padding:15px;
+                        color:#374151;
+                        line-height:1.6;
+                        font-size:15px;
+                        min-height:250px;
+                        white-space:pre-wrap;
+                    ">${selectedStudent.note?.trim() || "<span style='color:#9ca3af;font-style:italic;'>No notes available.</span>"}</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+`;
+
+            document
+                .getElementById("studentModal")
+                .style.display = "block";
+
+        }
+
+        function closeModal() {
+            document
+                .getElementById("studentModal")
+                .style.display = "none";
+        }
+
+        function editStudent() {
+            window.location =
+                "/student-edit.html?id="
+                + selectedStudent.studentId;
+        }
+
+        async function deleteStudent() {
+            if (
+                !confirm(
+                    "Delete this student?"
+                )
+            )
+                return;
+
+            await fetch(
+                STUDENT_API + "/"
+                + selectedStudent.studentId,
+                {
+                    method: "DELETE"
+                }
+            );
+
+            closeModal();
+
+            loadStudents();
+        }
+
+        function formatDate(date) {
+            if (!date)
+                return "-";
+
+            return new Date(date)
+                .toLocaleDateString();
+        }
+
+        async function init() {
+            await loadCourses();
+            await loadStudents();
+        }
+
+
+        init();
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Add Exam</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#f4f6f9;
+}
+
+.header{
+    background:#1f2937;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+.container{
+    max-width:700px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:25px;
+    box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+label{
+    display:block;
+    margin-bottom:6px;
+    font-weight:bold;
+}
+
+input,
+select{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    font-size:15px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+.message{
+    margin-top:15px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.success{
+    color:green;
+}
+
+.error{
+    color:red;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Zenith Computer Academy</h1>
+    <p>Create New Exam</p>
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <div class="form-group">
+            <label>Exam Name</label>
+
+            <input
+                type="text"
+                id="examName"
+                placeholder="Monthly Test 1">
+        </div>
+
+        <div class="form-group">
+            <label>Course</label>
+
+            <select id="courseId">
+                <option value="">
+                    Loading Courses...
+                </option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Total Marks</label>
+
+            <input
+                type="number"
+                id="totalMarks"
+                placeholder="100">
+        </div>
+
+        <div class="form-group">
+            <label>Exam Date</label>
+
+            <input
+                type="date"
+                id="examDate">
+        </div>
+
+        <button onclick="saveExam()">
+            Create Exam
+        </button>
+
+        <div id="message"
+             class="message">
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const COURSE_API = "/api/course";
+const EXAM_API = "/api/exam";
+
+let allCourses = [];
+
+async function loadCourses()
+{
+    try
+    {
+        const response =
+            await fetch(COURSE_API);
+
+        allCourses =
+            await response.json();
+
+        const dropdown =
+            document.getElementById("courseId");
+
+        dropdown.innerHTML =
+            '<option value="">Select Course</option>';
+
+        allCourses.forEach(course => {
+
+            dropdown.innerHTML +=
+            `
+            <option value="${course.id}">
+                ${course.courseName}
+                (${course.id})
+            </option>
+            `;
+        });
+    }
+    catch(error)
+    {
+        console.error(error);
+    }
+}
+
+async function saveExam()
+{
+    const examName =
+        document.getElementById(
+            "examName"
+        ).value.trim();
+
+    const courseId =
+        document.getElementById(
+            "courseId"
+        ).value;
+
+    const totalMarks =
+        document.getElementById(
+            "totalMarks"
+        ).value;
+
+    const examDate =
+        document.getElementById(
+            "examDate"
+        ).value;
+
+    if(
+        examName === "" ||
+        courseId === "" ||
+        totalMarks === "" ||
+        examDate === ""
+    )
+    {
+        showMessage(
+            "Please fill all fields",
+            false
+        );
+        return;
+    }
+
+    const payload =
+    {
+        examName: examName,
+        courseId: courseId,
+        totalMarks: parseInt(totalMarks),
+        examDate: examDate
+    };
+
+    try
+    {
+        const response =
+            await fetch(
+                EXAM_API,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":
+                        "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(payload)
+                }
+            );
+
+        if(response.ok)
+        {
+            showMessage(
+                "Exam Created Successfully",
+                true
+            );
+
+            clearForm();
+        }
+        else
+        {
+            showMessage(
+                "Failed To Create Exam",
+                false
+            );
+        }
+    }
+    catch(error)
+    {
+        console.error(error);
+
+        showMessage(
+            "Server Error",
+            false
+        );
+    }
+}
+
+function clearForm()
+{
+    document.getElementById(
+        "examName"
+    ).value="";
+
+    document.getElementById(
+        "courseId"
+    ).selectedIndex=0;
+
+    document.getElementById(
+        "totalMarks"
+    ).value="";
+
+    document.getElementById(
+        "examDate"
+    ).value="";
+}
+
+function showMessage(message,isSuccess)
+{
+    const msg =
+        document.getElementById(
+            "message"
+        );
+
+    msg.innerHTML = message;
+
+    if(isSuccess)
+    {
+        msg.className =
+            "message success";
+    }
+    else
+    {
+        msg.className =
+            "message error";
+    }
+}
+
+loadCourses();
+
+</script>
+
+</body>
+</html>

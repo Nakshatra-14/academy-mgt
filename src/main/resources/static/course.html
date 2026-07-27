@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Course Management - Zenith Academy</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f9;
+        }
+
+        .navbar {
+            background: #1f2937;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        th {
+            background: #f9fafb;
+        }
+
+        .actions button {
+            margin-right: 5px;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .row input {
+            flex: 1;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="navbar">
+        Zenith Computer Academy - Course Management
+    </div>
+
+    <div class="container">
+
+        <!-- ADD COURSE -->
+        <div class="card">
+            <h2>Add Course</h2>
+
+            <input type="text" id="courseName" placeholder="Enter Course Name">
+
+            <button class="btn-primary" onclick="addCourse()">
+                Add Course
+            </button>
+        </div>
+
+        <!-- LIST COURSE -->
+        <div class="card">
+            <h2>All Courses</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Course ID</th>
+                        <th>Course Name</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody id="courseTable">
+                </tbody>
+
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+
+        const API = "/api/course";
+
+        let editId = null;
+
+        /* LOAD COURSES */
+        async function loadCourses() {
+            const res = await fetch(API);
+            const data = await res.json();
+
+            let rows = "";
+
+            data.forEach(c => {
+                rows += `
+        <tr>
+            <td>${c.id}</td>
+            <td>${c.courseName}</td>
+            <td class="actions">
+                <button class="btn-warning"
+onclick="window.location='course-edit.html?id=${c.id}'">
+    Edit
+</button>
+
+                <button class="btn-danger" onclick="deleteCourse('${c.id}')">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        `;
+            });
+
+            document.getElementById("courseTable").innerHTML = rows;
+        }
+
+        /* ADD OR UPDATE COURSE */
+        async function addCourse() {
+
+            const courseName = document.getElementById("courseName").value;
+
+            if (courseName.trim() === "") {
+                alert("Course name required");
+                return;
+            }
+
+            if (editId === null) {
+
+                // CREATE
+                await fetch(API, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        courseName: courseName
+                    })
+                });
+
+            } else {
+
+                // UPDATE
+                await fetch(`${API}/${editId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        courseName: courseName
+                    })
+                });
+
+                editId = null;
+            }
+
+            document.getElementById("courseName").value = "";
+            loadCourses();
+        }
+
+        /* EDIT */
+        function editCourse(id, name) {
+            editId = id;
+            document.getElementById("courseName").value = name;
+        }
+
+        /* DELETE */
+        async function deleteCourse(id) {
+
+            if (!confirm("Are you sure?")) return;
+
+            await fetch(`${API}/${id}`, {
+                method: "DELETE"
+            });
+
+            loadCourses();
+        }
+
+        /* INIT */
+        loadCourses();
+
+    </script>
+
+</body>
+
+</html>

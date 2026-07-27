@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenith Dashboard</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f9;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #111827, #1f2937);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #3b82f6;
+            transition: background-color 0.4s ease;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .nav-links button {
+            border: none;
+            background: white;
+            color: #1f2937;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: .25s;
+        }
+
+        .nav-links button:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .menu-btn {
+            display: none;
+            border: none;
+            background: #2563eb;
+            color: white;
+            font-size: 22px;
+            width: 45px;
+            height: 45px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* LAYOUT */
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .left-panel {
+            flex: 0 0 15%;
+        }
+
+        .center-panel {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .right-panel {
+            flex: 0 0 20%;
+        }
+
+        /* CARD */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* STATS */
+        #monthlyCollection {
+            filter: blur(8px);
+            transition: filter 0.25s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #monthlyCollection:hover {
+            filter: blur(0);
+        }
+
+        .stat-box {
+            background: #eff6ff;
+            border-left: 5px solid #2563eb;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        /* NOTES */
+        .note {
+            background: #fff7d6;
+            border-left: 5px solid #f59e0b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .note-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .note-text {
+            margin-bottom: 8px;
+            color: #444;
+            white-space: pre-wrap;
+        }
+
+        .note-date {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* DYNAMIC GANTT / SCHEDULE TABLE STYLES */
+        .gantt-wrapper {
+            overflow-x: auto;
+            border: 2px solid #4b5563;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .gantt-container {
+            min-width: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gantt-header {
+            display: flex;
+            background: #1e40af;
+            color: white;
+            font-weight: bold;
+            border-top-left-radius: 6px;
+            border-top-right-radius: 6px;
+        }
+
+        .gantt-day-label {
+            width: 110px;
+            flex-shrink: 0;
+            padding: 12px 10px;
+            display: flex;
+            align-items: center;
+            border-right: 2px solid #374151;
+            font-size: 13px;
+        }
+
+        .gantt-hours {
+            display: flex;
+            flex-grow: 1;
+        }
+
+        .gantt-hour-col {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            font-size: 12px;
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+        }
+
+        .gantt-hour-col:last-child {
+            border-right: none;
+        }
+
+        .gantt-row {
+            display: flex;
+            border-bottom: 2px solid #6b7280;
+            transition: min-height 0.3s ease;
+        }
+
+        .gantt-row:last-child {
+            border-bottom: none;
+        }
+
+        .gantt-row .gantt-day-label {
+            background: #f3f4f6;
+            color: #374151;
+            font-weight: bold;
+        }
+
+        .gantt-timeline {
+            flex-grow: 1;
+            display: flex;
+            position: relative;
+        }
+
+        .gantt-grid {
+            display: flex;
+            width: 100%;
+        }
+
+        .gantt-grid-col {
+            flex: 1;
+            border-right: 1px dashed #d1d5db;
+        }
+
+        .gantt-grid-col:last-child {
+            border-right: none;
+        }
+
+        .gantt-blocks {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .gantt-block {
+            position: absolute;
+            border-radius: 6px;
+            padding: 4px 8px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .gantt-block:hover {
+            transform: scale(1.02);
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .gantt-course-name {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gantt-time-label {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-top: 2px;
+            font-weight: normal;
+        }
+
+        .empty-schedule-msg {
+            padding: 20px;
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        /* MOBILE RESPONSIVENESS */
+        @media(max-width:900px) {
+            .dashboard {
+                flex-direction: column;
+            }
+
+            .left-panel,
+            .center-panel,
+            .right-panel {
+                flex: none;
+                width: 100%;
+            }
+
+            .right-panel {
+                order: 1;
+            }
+
+            .center-panel {
+                order: 2;
+            }
+
+            .left-panel {
+                order: 3;
+            }
+
+            .navbar {
+                flex-wrap: wrap;
+            }
+
+            .menu-btn {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                width: 100%;
+                margin-top: 15px;
+                flex-direction: column;
+            }
+
+            .nav-links.show {
+                display: flex;
+            }
+
+            .nav-links button {
+                width: 100%;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div class="navbar">
+        <div class="logo-container">
+            <div class="logo">Zenith Computer Academy</div>
+        </div>
+
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+
+        <div class="nav-links" id="navLinks">
+            <button onclick="location.href='teaching-note.html'">Teaching Notes</button>
+            <button onclick="location.href='schedule.html'">Schedule</button>
+            <button onclick="location.href='student-add.html'">Add Student</button>
+            <button onclick="location.href='student-manage.html'">Students</button>
+            <button onclick="location.href='course.html'">Courses</button>
+            <button onclick="location.href='payment-manage.html'">Payments</button>
+            <button onclick="location.href='exam-add.html'">Add Exam</button>
+            <button onclick="location.href='exam-manage.html'">Exams</button>
+            <button onclick="location.href='result-view.html'">Results</button>
+            <button onclick="location.href='note-add.html'">Add Note</button>
+            <button onclick="location.href='note-manage.html'">Notes</button>
+        </div>
+
+        <div id="statusBar" class="status-bar" title="Connecting..."></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="dashboard">
+
+        <!-- LEFT PANEL -->
+        <div class="left-panel">
+            <div class="card">
+                <div class="card-title">Academy Stats</div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Students</div>
+                    <div class="stat-value" id="studentCount">0</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Active Students</div>
+                    <div class="stat-value" id="activeCount">0</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Courses</div>
+                    <div class="stat-value" id="courseCount">0</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Exams</div>
+                    <div class="stat-value" id="examCount">0</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Total Fees Collection (Monthly)</div>
+                    <div class="stat-value" id="monthlyCollection">₹0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL -->
+        <div class="center-panel">
+            <div class="card">
+                <div class="card-title">Dynamic Schedule Chart</div>
+                <div id="scheduleGrid">
+                    Loading Schedule...
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+            <div class="card">
+                <div class="card-title">Pending Notes</div>
+                <div id="notesContainer">
+                    <div class="note">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const STUDENT_API = "/api/student";
+        const COURSE_API = "/api/course";
+        const EXAM_API = "/api/exam";
+        const PAYMENT_API = "/api/payment";
+        const NOTE_API = "/api/note";
+        const SCHEDULE_API = "/api/schedule";
+
+        const CACHE_KEY = "zenith_dashboard_cache";
+
+        // Color Palette Generator for Courses
+        const courseColors = {};
+        const palette = [
+            '#2563eb', '#059669', '#7c3aed', '#d97706', '#dc2626',
+            '#db2777', '#0891b2', '#4f46e5', '#0d9488', '#e11d48',
+            '#65a30d', '#9333ea', '#ea580c', '#0284c7', '#ca8a04'
+        ];
+        let colorIndex = 0;
+
+        function getCourseColor(courseName) {
+            if (!courseColors[courseName]) {
+                courseColors[courseName] = palette[colorIndex % palette.length];
+                colorIndex++;
+            }
+            return courseColors[courseName];
+        }
+
+        // Convert "HH:MM:SS" or "HH:MM" string to fractional float (e.g., "09:30:00" -> 9.5)
+        function timeToFloat(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            let hour = parseInt(parts[0], 10);
+            let min = parseInt(parts[1] || 0, 10);
+
+            // Correct potential 12-hour formatting errors (e.g., 01:00 PM entered as 01:00)
+            if (hour >= 1 && hour <= 7) {
+                hour += 12;
+            }
+
+            return hour + (min / 60);
+        }
+
+        // Format float hour to clean AM/PM string (e.g., 14.0 -> "2 PM", 9.5 -> "9:30 AM")
+        function formatFloatTime(floatHour) {
+            let hour = Math.floor(floatHour);
+            let mins = Math.round((floatHour - hour) * 60);
+            let ampm = hour >= 12 ? 'PM' : 'AM';
+            let displayHour = hour % 12 === 0 ? 12 : hour % 12;
+            let displayMin = mins > 0 ? `:${mins.toString().padStart(2, '0')}` : '';
+            return `${displayHour}${displayMin} ${ampm}`;
+        }
+
+        async function loadDashboard() {
+            const statusBar = document.getElementById("statusBar");
+            statusBar.style.backgroundColor = "#3b82f6";
+            statusBar.title = "Connecting...";
+
+            try {
+                const schedules = await (await fetch(SCHEDULE_API)).json();
+                const students = await (await fetch(STUDENT_API)).json();
+                const courses = await (await fetch(COURSE_API)).json();
+                const exams = await (await fetch(EXAM_API)).json();
+                const notes = await (await fetch(NOTE_API)).json();
+
+                const dashboardData = { schedules, students, courses, exams, notes };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(dashboardData));
+
+                statusBar.style.backgroundColor = "#10b981";
+                statusBar.title = "Online";
+
+                renderDashboardData(dashboardData);
+            } catch (error) {
+                console.warn("API Fetch Failed. Loading Cache or Demo Data...", error);
+                const cachedDataString = localStorage.getItem(CACHE_KEY);
+
+                if (cachedDataString) {
+                    statusBar.style.backgroundColor = "#f59e0b";
+                    statusBar.title = "Offline (Showing Cached Data)";
+                    renderDashboardData(JSON.parse(cachedDataString));
+                } else {
+                    statusBar.style.backgroundColor = "#ef4444";
+                    statusBar.title = "Offline (Demo Mode)";
+                    loadDummyData();
+                }
+            }
+        }
+
+        function renderDashboardData(data) {
+            renderSchedule(data.schedules);
+            updateStatsAndNotes(data.students, data.courses, data.exams, data.notes);
+        }
+
+        function loadDummyData() {
+            const dummySchedules = [
+                { dayName: "MONDAY", startTime: "09:00:00", endTime: "11:00:00", courseName: "Python Fullstack" },
+                { dayName: "MONDAY", startTime: "10:00:00", endTime: "12:00:00", courseName: "UI/UX Design" },
+                { dayName: "MONDAY", startTime: "11:30:00", endTime: "13:30:00", courseName: "React JS Advanced" },
+                { dayName: "MONDAY", startTime: "17:00:00", endTime: "19:00:00", courseName: "Machine Learning" },
+
+                { dayName: "TUESDAY", startTime: "10:00:00", endTime: "12:00:00", courseName: "Data Science" },
+                { dayName: "TUESDAY", startTime: "12:00:00", endTime: "14:00:00", courseName: "C++ Fundamentals" },
+
+                { dayName: "WEDNESDAY", startTime: "09:00:00", endTime: "11:00:00", courseName: "Python Fullstack" },
+                { dayName: "WEDNESDAY", startTime: "16:30:00", endTime: "18:30:00", courseName: "Java Enterprise" },
+
+                { dayName: "FRIDAY", startTime: "09:00:00", endTime: "11:00:00", courseName: "Python Fullstack" },
+                { dayName: "FRIDAY", startTime: "17:00:00", endTime: "18:30:00", courseName: "Task 1 (5 to 6:30)" },
+                { dayName: "FRIDAY", startTime: "18:00:00", endTime: "19:30:00", courseName: "Task 3 (6 to 7:30)" },
+                { dayName: "FRIDAY", startTime: "19:00:00", endTime: "20:30:00", courseName: "Task 2 (7 to 8:30)" },
+
+                { dayName: "SATURDAY", startTime: "10:00:00", endTime: "14:00:00", courseName: "Weekend Bootcamp" },
+                { dayName: "SATURDAY", startTime: "11:00:00", endTime: "13:00:00", courseName: "AWS Cloud" }
+            ];
+
+            const dummyStudents = [{ status: "ACTIVE", fees: 5000 }, { status: "INACTIVE", fees: 0 }, { status: "ACTIVE", fees: 4500 }];
+            const dummyCourses = [{}, {}, {}, {}, {}];
+            const dummyExams = [{}, {}];
+            const dummyNotes = [{ status: "PENDING", title: "Grade Papers", noteText: "Grade weekend bootcamp papers.", dueDate: "2026-03-30" }];
+
+            renderDashboardData({
+                schedules: dummySchedules,
+                students: dummyStudents,
+                courses: dummyCourses,
+                exams: dummyExams,
+                notes: dummyNotes
+            });
+        }
+
+        function updateStatsAndNotes(students, courses, exams, notes) {
+            document.getElementById("studentCount").innerText = students.length;
+            document.getElementById("activeCount").innerText = students.filter(s => s.status === "ACTIVE").length;
+            document.getElementById("courseCount").innerText = courses.length;
+            document.getElementById("examCount").innerText = exams.length;
+
+            const totalFees = students.reduce((sum, student) => sum + (student.fees || 0), 0);
+            document.getElementById("monthlyCollection").innerText = "₹" + totalFees;
+
+            const pending = notes.filter(note => note.status === "PENDING");
+            let html = "";
+            pending.forEach(note => {
+                html += `
+                <div class="note">
+                    <div class="note-title">${note.title}</div>
+                    <div class="note-text">${note.noteText || ""}</div>
+                    <div class="note-date">Due: ${note.dueDate ? note.dueDate.substring(0, 10) : "-"}</div>
+                </div>`;
+            });
+            document.getElementById("notesContainer").innerHTML = html || "<div class='note'>No Pending Notes</div>";
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /*   MAIN ALGORITHM ENGINE: DYNAMIC TABLE & INTERVAL PACKING LAYOUT           */
+        /* -------------------------------------------------------------------------- */
+        function renderSchedule(schedules) {
+            if (!schedules || schedules.length === 0) {
+                document.getElementById("scheduleGrid").innerHTML = "<div class='empty-schedule-msg'>No schedules available.</div>";
+                return;
+            }
+
+            const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+
+            // STEP 1: Parse times & calculate global bounds (Min Start & Max End)
+            let parsedSchedules = schedules.map(s => ({
+                ...s,
+                startFloat: timeToFloat(s.startTime),
+                endFloat: timeToFloat(s.endTime)
+            }));
+
+            let minTime = Math.floor(Math.min(...parsedSchedules.map(s => s.startFloat)));
+            let maxTime = Math.ceil(Math.max(...parsedSchedules.map(s => s.endFloat)));
+
+            // STEP 2: Find & prune empty time slots (Columns without tasks)
+            // Divide full range into 1-hour candidate intervals
+            let candidateSlots = [];
+            for (let hour = minTime; hour < maxTime; hour++) {
+                candidateSlots.push({ start: hour, end: hour + 1 });
+            }
+
+            // Keep slot if AT LEAST ONE task overlaps with this hour slot across all days
+            let activeSlots = candidateSlots.filter(slot => {
+                return parsedSchedules.some(task => {
+                    return task.startFloat < slot.end && task.endFloat > slot.start;
+                });
+            });
+
+            if (activeSlots.length === 0) {
+                document.getElementById("scheduleGrid").innerHTML = "<div class='empty-schedule-msg'>No active task time slots found.</div>";
+                return;
+            }
+
+            const TOTAL_COLUMNS = activeSlots.length;
+
+            // Helper to map fractional time into precise timeline horizontal percentages (%)
+            function getTimelinePercentage(floatTime) {
+                // If before first active slot
+                if (floatTime <= activeSlots[0].start) return 0;
+                // If after last active slot
+                if (floatTime >= activeSlots[TOTAL_COLUMNS - 1].end) return 100;
+
+                for (let i = 0; i < TOTAL_COLUMNS; i++) {
+                    let slot = activeSlots[i];
+                    if (floatTime >= slot.start && floatTime <= slot.end) {
+                        let fraction = (floatTime - slot.start) / (slot.end - slot.start);
+                        return ((i + fraction) / TOTAL_COLUMNS) * 100;
+                    }
+                }
+
+                // If falls into a pruned gap, map to closest active boundary
+                for (let i = 0; i < TOTAL_COLUMNS - 1; i++) {
+                    if (floatTime > activeSlots[i].end && floatTime < activeSlots[i + 1].start) {
+                        return ((i + 1) / TOTAL_COLUMNS) * 100;
+                    }
+                }
+
+                return 0;
+            }
+
+            // STEP 3: Render Header & Background Grid
+            let headerColumnsHtml = "";
+            let gridColumnsHtml = "";
+
+            activeSlots.forEach(slot => {
+                let timeStr = formatFloatTime(slot.start);
+                headerColumnsHtml += `<div class="gantt-hour-col">${timeStr}</div>`;
+                gridColumnsHtml += `<div class="gantt-grid-col"></div>`;
+            });
+
+            let html = `
+            <div class="gantt-wrapper">
+                <div class="gantt-container">
+                    <div class="gantt-header">
+                        <div class="gantt-day-label">Day / Time</div>
+                        <div class="gantt-hours">
+                            ${headerColumnsHtml}
+                        </div>
+                    </div>
+            `;
+
+            const BLOCK_HEIGHT = 42; // Task card height in pixels
+            const BLOCK_GAP = 6;     // Vertical spacing between stacked tracks
+
+            // STEP 4: Render Daily Rows with Interval Packing Algorithm
+            days.forEach(day => {
+                const dayTasks = parsedSchedules.filter(s => s.dayName === day);
+
+                // Sort tasks by Start Time ascending, then by End Time ascending
+                dayTasks.sort((a, b) => a.startFloat - b.startFloat || a.endFloat - b.endFloat);
+
+                /*
+                   GREEDY INTERVAL PACKING ALGORITHM (Lane Allocation):
+                   Tracks array stores end times of current tasks in each lane.
+                   For each task, find the first lane where trackEnd <= taskStart.
+                   If found, reuse lane. Otherwise, create a new lane.
+                */
+                const tracks = []; // Stores end time of the last task in track index [i]
+                const packedBlocks = [];
+
+                dayTasks.forEach(task => {
+                    let assignedTrack = -1;
+
+                    for (let i = 0; i < tracks.length; i++) {
+                        if (tracks[i] <= task.startFloat) {
+                            assignedTrack = i;
+                            tracks[i] = task.endFloat; // Update lane free time
+                            break;
+                        }
+                    }
+
+                    // If no existing track can fit this task without overlapping, create a new track
+                    if (assignedTrack === -1) {
+                        tracks.push(task.endFloat);
+                        assignedTrack = tracks.length - 1;
+                    }
+
+                    packedBlocks.push({
+                        ...task,
+                        trackIndex: assignedTrack
+                    });
+                });
+
+                // Calculate layout coordinates
+                let blocksHtml = "";
+                packedBlocks.forEach(task => {
+                    let leftPct = getTimelinePercentage(task.startFloat);
+                    let rightPct = getTimelinePercentage(task.endFloat);
+                    let widthPct = Math.max(rightPct - leftPct, 1.5); // Ensure min visible width
+
+                    let color = getCourseColor(task.courseName);
+                    let timeLabel = `${task.startTime.substring(0, 5)} - ${task.endTime.substring(0, 5)}`;
+                    let topPos = (task.trackIndex * (BLOCK_HEIGHT + BLOCK_GAP)) + BLOCK_GAP;
+
+                    blocksHtml += `
+                        <div class="gantt-block" 
+                             style="left: ${leftPct}%; width: ${widthPct}%; background-color: ${color}; top: ${topPos}px; height: ${BLOCK_HEIGHT}px;"
+                             title="${task.courseName} (${timeLabel})">
+                            <span class="gantt-course-name">${task.courseName}</span>
+                            <span class="gantt-time-label">${timeLabel}</span>
+                        </div>
+                    `;
+                });
+
+                // Row height dynamically expands based on total tracks needed
+                const totalTracks = Math.max(1, tracks.length);
+                const rowHeight = (totalTracks * (BLOCK_HEIGHT + BLOCK_GAP)) + BLOCK_GAP;
+
+                html += `
+                    <div class="gantt-row" style="min-height: ${rowHeight}px;">
+                        <div class="gantt-day-label">${day}</div>
+                        
+                        <div class="gantt-timeline">
+                            <div class="gantt-grid">
+                                ${gridColumnsHtml}
+                            </div>
+                            <div class="gantt-blocks">
+                                ${blocksHtml}
+                            </div> 
+                        </div> 
+                    </div> 
+                `;
+            });
+
+            html += `
+                </div>
+            </div>
+            `;
+
+            document.getElementById("scheduleGrid").innerHTML = html;
+        }
+
+        // Initialize App on DOM Load
+        loadDashboard();
+
+        function toggleMenu() {
+            document.getElementById("navLinks").classList.toggle("show");
+        }
+    </script>
+</body>
+
+</html>

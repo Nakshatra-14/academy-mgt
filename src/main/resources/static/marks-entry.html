@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Marks Entry</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f4f6f9;
+        }
+
+        .header {
+            background: #1f2937;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, .1);
+            margin-bottom: 20px;
+        }
+
+        .exam-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .exam-info {
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: #2563eb;
+            color: white;
+            padding: 12px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        input[type=number] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .save-btn {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            background: #16a34a;
+            color: white;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background: #15803d;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        @media(max-width:768px) {
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Marks Entry</h1>
+    </div>
+
+    <div class="container">
+
+        <div id="examCard"></div>
+
+        <div class="card">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Marks</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="studentTable">
+                    <tr>
+                        <td colspan="4" class="loading">
+                            Loading...
+                        </td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        const EXAM_API = "/api/exam";
+        const STUDENT_API = "/api/student";
+        const MARKS_API = "/api/marks";
+        const COURSE_API = "/api/course";
+
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const examId =
+            params.get("examId");
+
+        let exam = null;
+        let students = [];
+        let marks = [];
+        let courses = [];
+
+        async function init() {
+            await loadCourses();
+            await loadExam();
+            await loadMarks();
+            await loadStudents();
+        }
+
+        async function loadCourses() {
+            const response =
+                await fetch(COURSE_API);
+
+            courses =
+                await response.json();
+        }
+
+        function getCourseName(id) {
+            const course =
+                courses.find(
+                    c => c.id === id
+                );
+
+            return course
+                ? course.courseName
+                : id;
+        }
+
+        async function loadExam() {
+            const response =
+                await fetch(
+                    EXAM_API +
+                    "/" +
+                    examId
+                );
+
+            exam =
+                await response.json();
+
+            document.getElementById(
+                "examCard"
+            ).innerHTML =
+                `
+    <div class="card">
+
+        <div class="exam-title">
+            ${exam.examName}
+        </div>
+
+        <div class="exam-info">
+            Exam ID :
+            ${exam.examId}
+        </div>
+
+        <div class="exam-info">
+            Course :
+            ${getCourseName(exam.courseId)}
+            (${exam.courseId})
+        </div>
+
+        <div class="exam-info">
+            Total Marks :
+            ${exam.totalMarks}
+        </div>
+
+    </div>
+    `;
+        }
+
+        async function loadMarks() {
+            const response =
+                await fetch(
+                    MARKS_API +
+                    "/exam/" +
+                    examId
+                );
+
+            marks =
+                await response.json();
+        }
+
+        async function loadStudents() {
+            const response =
+                await fetch(
+                    STUDENT_API +
+                    "/course/" +
+                    exam.courseId
+                );
+
+            students =
+                await response.json();
+
+            renderStudents();
+        }
+
+        function renderStudents() {
+            const table =
+                document.getElementById(
+                    "studentTable"
+                );
+
+            let html = "";
+
+            students.forEach(student => {
+
+                const existingMark =
+                    marks.find(
+                        m =>
+                            m.studentId ===
+                            student.studentId
+                    );
+
+                html +=
+                    `
+        <tr>
+
+            <td>
+                ${student.studentId}
+            </td>
+
+            <td>
+                ${student.name}
+            </td>
+
+            <td>
+
+                <input
+                    type="number"
+                    min="0"
+                    max="${exam.totalMarks}"
+                    id="mark-${student.studentId}"
+                    value="${existingMark
+                        ?
+                        existingMark.markObtained
+                        :
+                        ''
+                    }">
+
+            </td>
+
+            <td>
+
+    <button
+        class="save-btn"
+        ${existingMark ? "disabled" : ""}
+        style="
+            ${existingMark
+                ? "background:#6b7280;"
+                : ""
+            }"
+        onclick="
+        saveMarks(
+        '${student.studentId}',
+        this
+        )">
+
+        ${existingMark
+            ? "Saved ✓"
+            : "Save"
+        }
+
+    </button>
+
+</td>
+
+        </tr>
+        `;
+            });
+
+            table.innerHTML = html;
+        }
+
+        async function saveMarks(studentId, button) {
+            const mark =
+                document.getElementById(
+                    "mark-" + studentId
+                ).value;
+
+            if (mark === "")
+            {
+                alert(
+                    "Enter marks first"
+                );
+                return;
+            }
+
+            const markValue = parseInt(mark);
+
+            if(markValue < 0 || markValue > exam.totalMarks)
+            {
+                alert(
+                    "Marks must be between 0 and " +
+                    exam.totalMarks
+                );
+                return;
+            }
+
+            const payload =
+            {
+                studentId:
+                    studentId,
+
+                examId:
+                    examId,
+
+                markObtained:
+                    markValue
+            };
+
+            try {
+                const response =
+                    await fetch(
+                        MARKS_API,
+                        {
+                            method: "POST",
+
+                            headers:
+                            {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify(
+                                    payload
+                                )
+                        }
+                    );
+
+                if (response.ok) {
+                    alert(
+                        "Marks Saved Successfully"
+                    );
+
+                    button.innerText =
+                    "Saved ✓";
+                    button.disabled = true;
+                    button.style.background = "#6b7280";
+                }
+                else {
+                    alert(
+                        "Failed To Save"
+                    );
+                }
+            }
+            catch (error) {
+                console.error(error);
+
+                alert(
+                    "Server Error"
+                );
+            }
+        }
+
+        init();
+
+    </script>
+
+</body>
+
+</html>
