@@ -23,7 +23,7 @@ public class Student {
     @NotBlank(message = "Name is required")
     private String name;    
     @Column(name = "dob")
-    private Date dob;
+    private String dob;
     @Column(name = "gender")
     private Character gender;
     @Column(name = "father_name")
@@ -43,7 +43,7 @@ public class Student {
     @Column(name = "class")
     private String studentClass;
     @Column(name = "admission_date")
-    private Date admissionDate;
+    private String admissionDate;
     @Column(name = "course_fees")
     private double fees;
     @Column(name = "status")

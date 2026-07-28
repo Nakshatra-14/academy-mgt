@@ -26,7 +26,7 @@ public class Exam {
     private Integer totalMarks;
 
     @Column(name = "exam_date")
-    private Date examDate;
+    private String examDate;
 
     @Column(name = "course_id")
     private String courseId;

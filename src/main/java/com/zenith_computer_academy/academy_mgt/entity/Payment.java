@@ -21,7 +21,7 @@ public class Payment {
     private double amount;
 
     @Column(name = "payment_date")
-    private Date paymentDate;
+    private String paymentDate;
 
     @Column(name = "remarks")
     private String remarks;

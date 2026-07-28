@@ -12,7 +12,7 @@ public class RequestStudent {
 
     @NotBlank(message = "Name is required")
     private String name;    
-    private Date dob;
+    private String dob;
     private Character gender;
     private String fatherName;
     private String motherName;
@@ -22,7 +22,7 @@ public class RequestStudent {
     private String address;
     private String school;
     private String studentClass;
-    private Date admissionDate;
+    private String admissionDate;
     private double fees;
     private String status;
     private String note;

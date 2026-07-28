@@ -29,7 +29,7 @@ public class Note {
     private String noteText;
 
     @Column(name="due_date")
-    private Date dueDate;
+    private String dueDate;
 
     @Column(name="status")
     private String status;

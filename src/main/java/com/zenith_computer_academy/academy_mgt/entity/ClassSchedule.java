@@ -17,9 +17,9 @@ public class ClassSchedule {
 
     private String dayName;
 
-    private LocalTime startTime;
+    private String startTime;
 
-    private LocalTime endTime;
+    private String endTime;
 
     private String courseName;
 }

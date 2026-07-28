@@ -17,7 +17,7 @@ public class RequestExam {
     @NotNull
     private Integer totalMarks;
 
-    private Date examDate;
+    private String examDate;
 
     @NotBlank
     private String courseId;

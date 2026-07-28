@@ -15,7 +15,7 @@ public class RequestNote {
 
     private String noteText;
 
-    private Date dueDate;
+    private String dueDate;
 
     private String status;
 }

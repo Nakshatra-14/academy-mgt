@@ -35,7 +35,7 @@ public class PaymentService {
                 request.getRemarks());
 
         p.setPaymentDate(
-                new Date());
+                new Date().toString());
 
         return repo.save(p);
     }
