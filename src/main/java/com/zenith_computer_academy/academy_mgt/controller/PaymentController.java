@@ -43,9 +43,9 @@ public class PaymentController {
                 studentId);
     }
 
-    @PutMapping("/student/{studentId}")
-    public Payment updatePayment(@PathVariable Integer id, @RequestBody RequestPayment rp) {
-        return service.updatePayment(id, rp);
+    @PutMapping("/student/{paymentId}")
+    public Payment updatePayment(@PathVariable Integer paymentId, @RequestBody RequestPayment rp) {
+        return service.updatePayment(paymentId, rp);
     }
 
     @DeleteMapping("/{paymentId}")
