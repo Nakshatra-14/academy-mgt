@@ -44,6 +44,15 @@ public class PaymentService {
         return repo.findAll();
     }
 
+    public Payment updatePayment(Integer id, RequestPayment rp)
+    {
+        Payment p = repo.findById(id).orElseThrow(() -> new RuntimeException("Payment not Found"));
+        p.setAmount(rp.getAmount());
+        p.setRemarks(rp.getRemarks());
+
+        return repo.save(p);
+    }
+
     public List<Payment> getPaymentsByStudent(
             String studentId) {
 

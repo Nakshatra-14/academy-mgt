@@ -8,6 +8,7 @@ import com.zenith_computer_academy.academy_mgt.dto.RequestPayment;
 import com.zenith_computer_academy.academy_mgt.entity.Payment;
 import com.zenith_computer_academy.academy_mgt.service.PaymentService;
 
+
 @RestController
 @RequestMapping("/api/payment")
 @CrossOrigin("*")
@@ -40,6 +41,11 @@ public class PaymentController {
 
         return service.getPaymentsByStudent(
                 studentId);
+    }
+
+    @PutMapping("/student/{studentId}")
+    public Payment updatePayment(@PathVariable Integer id, @RequestBody RequestPayment rp) {
+        return service.updatePayment(id, rp);
     }
 
     @DeleteMapping("/{paymentId}")
