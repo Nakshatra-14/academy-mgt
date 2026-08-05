@@ -24,6 +24,7 @@ public class RequestStudent {
     private String studentClass;
     private String admissionDate;
     private double fees;
+    private double admissionFees;
     private String status;
     private String note;
     private String courseId;

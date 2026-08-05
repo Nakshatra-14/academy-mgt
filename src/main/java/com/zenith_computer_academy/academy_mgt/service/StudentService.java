@@ -33,6 +33,7 @@ public class StudentService {
         s.setStudentClass(request.getStudentClass());
         s.setAdmissionDate(request.getAdmissionDate());
         s.setFees(request.getFees());
+        s.setAdmissionFees(request.getAdmissionFees());
         s.setStatus(request.getStatus());
         s.setNote(request.getNote());
         s.setCourseId(request.getCourseId());
@@ -88,6 +89,7 @@ public class StudentService {
         s.setSchool(request.getSchool());
         s.setStudentClass(request.getStudentClass());
         s.setFees(request.getFees());
+        s.setAdmissionFees(request.getAdmissionFees());
         s.setStatus(request.getStatus());
         s.setNote(request.getNote());
         s.setCourseId(request.getCourseId());

@@ -46,6 +46,8 @@ public class Student {
     private String admissionDate;
     @Column(name = "course_fees")
     private double fees;
+    @Column(name = "admission_amount")
+    private double admissionFees;
     @Column(name = "status")
     private String status;
     @Column(name = "note")
